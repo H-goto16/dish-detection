@@ -1,0 +1,18 @@
+{
+  "image_path": "./apple.jpeg",
+  "prompt": "please detect chopsticks",
+  "object_name": "chopsticks",
+  "timestamp": "2025-06-23T12:01:43.575735",
+  "detections": [
+    {
+      "bbox": [
+        389.0089111328125,
+        161.54815673828125,
+        895.979736328125,
+        703.25439453125
+      ],
+      "confidence": 0.8698912858963013,
+      "class_id": 47
+    }
+  ]
+}

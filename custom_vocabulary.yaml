@@ -1,0 +1,10 @@
+# Custom Vocabulary for YOLO-World
+vocabulary:
+  - chopsticks
+  - red car
+  - apple
+
+# Usage example:
+# yolo = Yolo()
+# yolo.load_custom_vocabulary()
+# results = yolo.predict_with_custom_prompts("image.jpg")
