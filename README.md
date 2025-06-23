@@ -18,3 +18,20 @@ make setup
 ```
 make dev
 ```
+
+## Testing
+
+Run all tests:
+```
+make test
+```
+
+Run backend tests only:
+```
+make test-backend
+```
+
+Run frontend tests only:
+```
+make test-frontend
+```

@@ -1,3 +1,7 @@
 fastapi
 ultralytics
 uvicorn
+python-multipart
+pytest
+pytest-mock
+httpx

@@ -54,32 +54,3 @@ class YoloDetector:
         results = self.model.predict(image_path, conf=conf_threshold, verbose=False)
         return results[0]
 
-
-if __name__ == "__main__":
-    detector = YoloDetector()
-
-    print("\n--- Scenario 1: Initial detection (no default classes) ---")
-    image_to_predict_1 = "assets/apple.jpg"
-
-    results_1 = detector.predict_image(image_to_predict_1)
-    if results_1:
-        results_1.show()
-
-    print("\n--- Scenario 2: Add new classes and re-detect ---")
-    new_class_1 = "cup"
-    new_class_2 = "laptop"
-    detector.add_classes([new_class_1, new_class_2])
-
-    results_2 = detector.predict_image(image_to_predict_1)
-    if results_2:
-        results_2.show()
-
-    print("\n--- Scenario 3: Reload model and check if custom vocabulary is retained ---")
-    new_detector = YoloDetector()
-    print(f"Custom vocabulary after reload: {new_detector.get_current_classes()}")
-
-    image_to_predict_2 = "assets/apple.jpg"
-
-    results_3 = new_detector.predict_image(image_to_predict_2)
-    if results_3:
-        results_3.show()
