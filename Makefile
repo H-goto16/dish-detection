@@ -1,50 +1,30 @@
-.PHONY: help build up down logs shell frontend backend dev clean
+.PHONY:  setup backend frontend dev clean server setup-parallel setup-venv
 
-# Default target
-help:
-	@echo "Available commands:"
-	@echo "  make build     - Build the development Docker image"
-	@echo "  make up        - Start all services (frontend + backend)"
-	@echo "  make dev       - Start development container with shell access"
-	@echo "  make frontend  - Start frontend with hot reloading"
-	@echo "  make backend   - Start backend with hot reloading"
-	@echo "  make logs      - Show logs from all services"
-	@echo "  make shell     - Access development container shell"
-	@echo "  make down      - Stop all services"
-	@echo "  make clean     - Remove containers and images"
+PYTHON_COMMAND=python3
+PIP_COMMAND=pip3
+PNPM_COMMAND=pnpm
 
-# Build the development image
-build:
-	docker-compose build
+setup:
+	aqua i
+	make setup-parallel
+	make setup-venv
 
-# Start all services
-up:
-	docker-compose up -d
+setup-parallel:
+	cd frontend && ${PNPM_COMMAND} install &
+	cd backend && ${PYTHON_COMMAND} -m venv .venv &
+	wait
 
-# Start development container with interactive shell
-dev:
-	docker-compose run --rm dev
+setup-venv:
+	cd backend && . .venv/bin/activate && ${PYTHON_COMMAND} -m pip install -r requirements.txt
 
-# Start frontend with hot reloading
+server:
+	cd backend && . .venv/bin/activate && uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
+
 frontend:
-	docker-compose up frontend
+	cd frontend && ${PNPM_COMMAND} run start
 
-# Start backend with hot reloading
-backend:
-	docker-compose up backend
+dev:
+	make server & make frontend
 
-# Show logs
-logs:
-	docker-compose logs -f
-
-# Access shell in running container
-shell:
-	docker-compose exec dev bash
-
-# Stop all services
-down:
-	docker-compose down
-
-# Clean up
-clean:
-	docker-compose down -v --rmi all --remove-orphans
+venv-clean:
+	rm -rf backend/.venv

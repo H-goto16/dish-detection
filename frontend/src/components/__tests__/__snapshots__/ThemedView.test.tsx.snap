@@ -1,0 +1,31 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`ThemedView renders correctly 1`] = `
+<View
+  style={
+    [
+      {
+        "backgroundColor": "#ffffff",
+      },
+      undefined,
+    ]
+  }
+/>
+`;
+
+exports[`ThemedView renders with children 1`] = `
+<View
+  style={
+    [
+      {
+        "backgroundColor": "#ffffff",
+      },
+      undefined,
+    ]
+  }
+>
+  <Text>
+    Test content
+  </Text>
+</View>
+`;

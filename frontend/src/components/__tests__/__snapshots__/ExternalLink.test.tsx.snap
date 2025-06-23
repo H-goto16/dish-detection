@@ -1,0 +1,23 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`ExternalLink renders correctly with complex children 1`] = `
+<View
+  href="https://example.com"
+  onPress={[Function]}
+  target="_blank"
+>
+  <Text>
+    Visit Website
+  </Text>
+</View>
+`;
+
+exports[`ExternalLink renders correctly with simple text 1`] = `
+<View
+  href="https://example.com"
+  onPress={[Function]}
+  target="_blank"
+>
+  Visit Example
+</View>
+`;

@@ -1,0 +1,5 @@
+{
+  "editor.defaultFormatter": "biomejs.biome",
+  "python.defaultInterpreterPath": "./backend/.venv/bin/python",
+  "python.terminal.activateEnvironment": true
+}

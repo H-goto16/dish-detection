@@ -1,0 +1,54 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`ErrorDisplay renders correctly with default message 1`] = `
+<View
+  className="items-center justify-center p-4 "
+>
+  <Text
+    className="mb-1 text-center font-medium"
+  >
+    読み込みに失敗しました
+  </Text>
+</View>
+`;
+
+exports[`ErrorDisplay renders with custom className 1`] = `
+<View
+  className="items-center justify-center p-4 custom-error-class"
+>
+  <Text
+    className="mb-1 text-center font-medium"
+  >
+    エラーが発生しました
+  </Text>
+</View>
+`;
+
+exports[`ErrorDisplay renders with custom message 1`] = `
+<View
+  className="items-center justify-center p-4 "
+>
+  <Text
+    className="mb-1 text-center font-medium"
+  >
+    カスタムエラーメッセージ
+  </Text>
+</View>
+`;
+
+exports[`ErrorDisplay renders with message and details 1`] = `
+<View
+  className="items-center justify-center p-4 "
+>
+  <Text
+    className="mb-1 text-center font-medium"
+  >
+    データの取得に失敗しました
+  </Text>
+  <Text
+    className="text-center text-gray-500 text-sm"
+  >
+    ネットワーク接続を確認してください
+  </Text>
+</View>
+`;

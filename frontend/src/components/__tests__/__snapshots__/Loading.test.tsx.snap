@@ -1,0 +1,11 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Loading renders correctly 1`] = `
+<View
+  className="absolute inset-0 items-center justify-center bg-transparent"
+>
+  <View
+    className="h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent"
+  />
+</View>
+`;
