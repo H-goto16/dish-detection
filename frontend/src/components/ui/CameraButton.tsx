@@ -1,5 +1,4 @@
 import { Ionicons } from '@expo/vector-icons';
-import { ReactNode } from 'react';
 import { StyleSheet, TouchableOpacity, View, useColorScheme } from 'react-native';
 import { ThemedText } from '../ThemedText';
 
@@ -9,7 +8,7 @@ interface CameraButtonProps {
   variant?: 'primary' | 'secondary' | 'success' | 'danger' | 'purple';
   size?: 'small' | 'medium' | 'large';
   icon?: keyof typeof Ionicons.glyphMap;
-  children?: ReactNode;
+  children?: string;
   style?: any;
 }
 
@@ -99,7 +98,7 @@ export const CameraButton = ({
           style={children ? styles.iconWithText : undefined}
         />
       )}
-      {children && (
+      {children && typeof children === 'string' && (
         <ThemedText style={[styles.buttonText, { color: getTextColor() }]}>
           {children}
         </ThemedText>

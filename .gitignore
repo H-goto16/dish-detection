@@ -16,3 +16,6 @@ out/
 __pycache__/
 .venv
 venv.bak/
+
+runs/
+training_data/

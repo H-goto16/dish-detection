@@ -10,8 +10,17 @@ from PIL import Image, ImageDraw, ImageFont
 import io
 import base64
 import random
+import json
+import shutil
+from pathlib import Path
+import yaml
+from datetime import datetime
 
 yolo = YoloDetector()
+
+# Training data directory
+TRAINING_DATA_DIR = Path("training_data")
+TRAINING_DATA_DIR.mkdir(exist_ok=True)
 
 # Enhanced FastAPI app with better OpenAPI documentation
 app = FastAPI(
@@ -58,6 +67,14 @@ app = FastAPI(
         {
             "name": "detection",
             "description": "Object detection operations"
+        },
+        {
+            "name": "labeling",
+            "description": "Labeling operations"
+        },
+        {
+            "name": "training",
+            "description": "Training operations"
         }
     ]
 )
@@ -145,6 +162,36 @@ class MessageResponse(BaseModel):
         description="Status or informational message"
     )
 
+class LabelingData(BaseModel):
+    """Labeling data for training"""
+    boxes: List[Dict] = Field(
+        ...,
+        description="List of bounding boxes with labels"
+    )
+    image_width: int = Field(
+        ...,
+        description="Original image width"
+    )
+    image_height: int = Field(
+        ...,
+        description="Original image height"
+    )
+
+class LabelingResponse(BaseModel):
+    """Response for labeling submission"""
+    message: str = Field(
+        ...,
+        description="Status message"
+    )
+    saved_path: str = Field(
+        ...,
+        description="Path where the labeling data was saved"
+    )
+    total_labels: int = Field(
+        ...,
+        description="Total number of labels in the dataset"
+    )
+
 
 # CORS
 app.add_middleware(
@@ -178,7 +225,10 @@ async def root():
             "POST /model/classes": "Add new detection classes",
             "DELETE /model/classes": "Clear all detection classes",
             "POST /detect": "Detect objects in uploaded image",
-            "POST /detect/with-confidence": "Detect objects with custom confidence"
+            "POST /detect/with-confidence": "Detect objects with custom confidence",
+            "POST /labeling/submit": "Submit labeling data",
+            "POST /training/start": "Start model fine-tuning",
+            "GET /training/data/stats": "Get training data statistics"
         }
     }
 
@@ -594,4 +644,356 @@ async def detect_object_with_confidence(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error processing image: {str(e)}")
+
+def save_labeling_data(image_path: str, labeling_data: LabelingData, image_filename: str):
+    """
+    ラベリングデータをYOLO形式で保存
+    """
+    # Create subdirectories
+    images_dir = TRAINING_DATA_DIR / "images"
+    labels_dir = TRAINING_DATA_DIR / "labels"
+    images_dir.mkdir(exist_ok=True)
+    labels_dir.mkdir(exist_ok=True)
+
+    # Generate unique filename with timestamp
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    base_name = f"{timestamp}_{os.path.splitext(image_filename)[0]}"
+
+    # Save image
+    image_save_path = images_dir / f"{base_name}.jpg"
+    shutil.copy2(image_path, image_save_path)
+
+    # Convert bounding boxes to YOLO format and save annotation
+    label_save_path = labels_dir / f"{base_name}.txt"
+
+    with open(label_save_path, 'w') as f:
+        for box in labeling_data.boxes:
+            # Convert absolute coordinates to YOLO format (normalized)
+            x1, y1, x2, y2 = box['x1'], box['y1'], box['x2'], box['y2']
+
+            # Calculate center and dimensions (normalized)
+            center_x = (x1 + x2) / 2 / labeling_data.image_width
+            center_y = (y1 + y2) / 2 / labeling_data.image_height
+            width = abs(x2 - x1) / labeling_data.image_width
+            height = abs(y2 - y1) / labeling_data.image_height
+
+            # Get class ID (for now, use simple mapping)
+            class_name = box['label']
+            class_id = get_or_create_class_id(class_name)
+
+            # Write YOLO format: class_id center_x center_y width height
+            f.write(f"{class_id} {center_x:.6f} {center_y:.6f} {width:.6f} {height:.6f}\n")
+
+    return str(image_save_path), str(label_save_path)
+
+def get_or_create_class_id(class_name: str) -> int:
+    """
+    クラス名からクラスIDを取得または作成
+    """
+    classes_file = TRAINING_DATA_DIR / "classes.txt"
+
+    # Load existing classes
+    classes = []
+    if classes_file.exists():
+        with open(classes_file, 'r', encoding='utf-8') as f:
+            classes = [line.strip() for line in f if line.strip()]
+
+    # Find class ID
+    if class_name in classes:
+        return classes.index(class_name)
+    else:
+        # Add new class
+        classes.append(class_name)
+        with open(classes_file, 'w', encoding='utf-8') as f:
+            for cls in classes:
+                f.write(f"{cls}\n")
+        return len(classes) - 1
+
+def count_total_labels():
+    """
+    保存されているラベルの総数をカウント
+    """
+    labels_dir = TRAINING_DATA_DIR / "labels"
+    if not labels_dir.exists():
+        return 0
+
+    total = 0
+    for label_file in labels_dir.glob("*.txt"):
+        with open(label_file, 'r') as f:
+            total += len([line for line in f if line.strip()])
+
+    return total
+
+def create_training_config():
+    """
+    YOLOv8用のトレーニング設定ファイルを作成
+    """
+    classes_file = TRAINING_DATA_DIR / "classes.txt"
+    if not classes_file.exists():
+        return None
+
+    # Load classes
+    with open(classes_file, 'r', encoding='utf-8') as f:
+        classes = [line.strip() for line in f if line.strip()]
+
+    if not classes:
+        return None
+
+    # Create data.yaml
+    config = {
+        'path': str(TRAINING_DATA_DIR.absolute()),
+        'train': 'images',
+        'val': 'images',  # For simplicity, using same for validation
+        'nc': len(classes),
+        'names': classes
+    }
+
+    config_path = TRAINING_DATA_DIR / "data.yaml"
+    with open(config_path, 'w', encoding='utf-8') as f:
+        yaml.dump(config, f, default_flow_style=False, allow_unicode=True)
+
+    return str(config_path)
+
+@app.post(
+    "/labeling/submit",
+    tags=["labeling"],
+    summary="Submit Labeling Data",
+    description="""
+    Submit manually labeled image data for model training.
+
+    This endpoint accepts an image and its corresponding labeling data (bounding boxes with labels)
+    and saves them in YOLO training format for future model fine-tuning.
+
+    **Data Format:**
+    - Image: Any standard image format (JPEG, PNG, etc.)
+    - Labeling data: JSON with bounding boxes and labels
+    - Coordinates should be in absolute pixel values
+
+    **Training Data Storage:**
+    - Images are saved in `training_data/images/`
+    - Labels are saved in `training_data/labels/` in YOLO format
+    - Class mappings are maintained in `training_data/classes.txt`
+    """,
+    response_model=LabelingResponse
+)
+async def submit_labeling_data(
+    image: UploadFile,
+    labeling_data: str = Form(...)
+):
+    """Submit manually labeled data for training"""
+    try:
+        # Validate file type
+        if not image.content_type or not image.content_type.startswith('image/'):
+            raise HTTPException(status_code=400, detail="File must be an image")
+
+        # Parse labeling data
+        try:
+            labeling_json = json.loads(labeling_data)
+            labeling_obj = LabelingData(**labeling_json)
+        except (json.JSONDecodeError, ValueError) as e:
+            raise HTTPException(status_code=400, detail=f"Invalid labeling data format: {str(e)}")
+
+        # Read image
+        image_bytes = await image.read()
+        if len(image_bytes) == 0:
+            raise HTTPException(status_code=400, detail="Empty file uploaded")
+
+        # Save image temporarily
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as temp_file:
+            temp_file.write(image_bytes)
+            temp_file_path = temp_file.name
+
+        try:
+            # Save labeling data
+            image_path, label_path = save_labeling_data(
+                temp_file_path,
+                labeling_obj,
+                image.filename or "labeled_image.jpg"
+            )
+
+            # Create training configuration
+            config_path = create_training_config()
+
+            # Count total labels
+            total_labels = count_total_labels()
+
+            # Add new classes to the model if they don't exist
+            new_classes = [box['label'] for box in labeling_obj.boxes]
+            unique_classes = list(set(new_classes))
+
+            try:
+                yolo.add_classes(unique_classes)
+            except Exception as e:
+                print(f"Warning: Could not add classes to model: {e}")
+
+            return LabelingResponse(
+                message=f"Labeling data saved successfully. Added {len(labeling_obj.boxes)} labels.",
+                saved_path=image_path,
+                total_labels=total_labels
+            )
+
+        finally:
+            # Clean up temp file
+            if os.path.exists(temp_file_path):
+                os.unlink(temp_file_path)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error processing labeling data: {str(e)}")
+
+@app.post(
+    "/training/start",
+    tags=["training"],
+    summary="Start Model Fine-tuning",
+    description="""
+    Start fine-tuning the YOLO model with the collected labeling data.
+
+    **Requirements:**
+    - At least some labeled training data must be available
+    - Training data should be in proper YOLO format
+
+    **Process:**
+    1. Validates training data availability
+    2. Creates training configuration
+    3. Starts model fine-tuning process
+    4. Returns training status
+
+    **Note:** This is a long-running process. In production, this should be implemented as an async task.
+    """,
+    response_model=MessageResponse
+)
+async def start_model_training(epochs: int = 50):
+    """Start model fine-tuning with collected labeling data"""
+    try:
+        # Validate epochs parameter
+        if epochs <= 0 or epochs > 500:
+            raise HTTPException(
+                status_code=400,
+                detail="Epochs must be between 1 and 500"
+            )
+
+        # Check if training data exists
+        images_dir = TRAINING_DATA_DIR / "images"
+        labels_dir = TRAINING_DATA_DIR / "labels"
+
+        if not images_dir.exists() or not labels_dir.exists():
+            raise HTTPException(
+                status_code=400,
+                detail="No training data available. Please submit some labeled data first."
+            )
+
+        # Count training samples
+        image_files = list(images_dir.glob("*.jpg")) + list(images_dir.glob("*.png"))
+        label_files = list(labels_dir.glob("*.txt"))
+
+        if len(image_files) == 0 or len(label_files) == 0:
+            raise HTTPException(
+                status_code=400,
+                detail="Insufficient training data. Please add more labeled images."
+            )
+
+        # Create training config
+        config_path = create_training_config()
+        if not config_path:
+            raise HTTPException(
+                status_code=400,
+                detail="Could not create training configuration. Please check your labeling data."
+            )
+
+        # Start actual training
+        try:
+            print(f"Starting model fine-tuning with {len(image_files)} images and {epochs} epochs...")
+            results = yolo.fine_tune_model(config_path, epochs=epochs)
+
+            # Get the path to the best trained model
+            runs_dir = Path("runs/detect")
+            if runs_dir.exists():
+                # Find the most recent training run
+                train_dirs = [d for d in runs_dir.iterdir() if d.is_dir() and d.name.startswith('train')]
+                if train_dirs:
+                    latest_run = max(train_dirs, key=lambda x: x.stat().st_mtime)
+                    best_model_path = latest_run / "weights" / "best.pt"
+
+                    if best_model_path.exists():
+                        # Load the fine-tuned model
+                        yolo.load_trained_model(str(best_model_path))
+                        print(f"Fine-tuned model loaded from: {best_model_path}")
+
+            total_labels = count_total_labels()
+
+            return MessageResponse(
+                message=f"Model fine-tuning completed successfully! Trained on {len(image_files)} images with {total_labels} labels for {epochs} epochs."
+            )
+
+        except Exception as e:
+            print(f"Error during training: {e}")
+            raise HTTPException(status_code=500, detail=f"Training failed: {str(e)}")
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error starting training: {str(e)}")
+
+@app.get(
+    "/training/data/stats",
+    tags=["training"],
+    summary="Get Training Data Statistics",
+    description="Get statistics about the collected training data",
+    response_model=Dict[str, Any]
+)
+async def get_training_data_stats():
+    """Get statistics about training data"""
+    try:
+        images_dir = TRAINING_DATA_DIR / "images"
+        labels_dir = TRAINING_DATA_DIR / "labels"
+        classes_file = TRAINING_DATA_DIR / "classes.txt"
+
+        stats = {
+            "total_images": 0,
+            "total_labels": 0,
+            "classes": [],
+            "class_counts": {},
+            "data_directory": str(TRAINING_DATA_DIR.absolute())
+        }
+
+        # Count images
+        if images_dir.exists():
+            image_files = list(images_dir.glob("*.jpg")) + list(images_dir.glob("*.png"))
+            stats["total_images"] = len(image_files)
+
+        # Count labels and class distribution
+        if labels_dir.exists():
+            total_labels = 0
+            class_counts = {}
+
+            # Load class names
+            classes = []
+            if classes_file.exists():
+                with open(classes_file, 'r', encoding='utf-8') as f:
+                    classes = [line.strip() for line in f if line.strip()]
+
+            stats["classes"] = classes
+
+            # Count labels per class
+            for label_file in labels_dir.glob("*.txt"):
+                with open(label_file, 'r') as f:
+                    for line in f:
+                        if line.strip():
+                            total_labels += 1
+                            try:
+                                class_id = int(line.split()[0])
+                                if 0 <= class_id < len(classes):
+                                    class_name = classes[class_id]
+                                    class_counts[class_name] = class_counts.get(class_name, 0) + 1
+                            except (ValueError, IndexError):
+                                continue
+
+            stats["total_labels"] = total_labels
+            stats["class_counts"] = class_counts
+
+        return stats
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting training stats: {str(e)}")
 

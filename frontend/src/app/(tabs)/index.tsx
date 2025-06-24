@@ -7,6 +7,7 @@ import { StyledTextInput } from "@/components/ui/StyledTextInput";
 import { type CameraType, CameraView, useCameraPermissions } from "expo-camera";
 import * as FileSystem from "expo-file-system";
 import * as ImagePicker from "expo-image-picker";
+import { useRouter } from "expo-router";
 import { useRef, useState } from "react";
 import { ActivityIndicator, Image, Platform, ScrollView, StyleSheet, View, useColorScheme } from "react-native";
 
@@ -29,9 +30,25 @@ const HomeScreen = () => {
   const [detectionResults, setDetectionResults] = useState<DetectionResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [newClassName, setNewClassName] = useState('');
+  const [currentClasses, setCurrentClasses] = useState<string[]>([]);
   const cameraRef = useRef<CameraView>(null);
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
+  const router = useRouter();
+
+  const fetchCurrentClasses = async () => {
+    try {
+      const response = await fetch("http://localhost:8000/model/classes");
+      if (response.ok) {
+        const data = await response.json();
+        setCurrentClasses(data.classes || []);
+        return data.classes || [];
+      }
+    } catch (error) {
+      console.error('Error fetching classes:', error);
+    }
+    return [];
+  };
 
   const addNewClass = async (className: string) => {
     try {
@@ -49,6 +66,7 @@ const HomeScreen = () => {
         console.log(`Class "${className}" added successfully`);
         PlatformAlert.success("Success", `Class "${className}" has been added`);
         setNewClassName('');
+        await fetchCurrentClasses();
         return true;
       } else {
         const errorData = await response.json();
@@ -189,6 +207,20 @@ const HomeScreen = () => {
     }
   };
 
+  const navigateToLabeling = async () => {
+    if (!capturedImage) return;
+
+    const classes = await fetchCurrentClasses();
+
+    router.push({
+      pathname: '/labeling',
+      params: {
+        imageUri: capturedImage,
+        existingClasses: JSON.stringify(classes)
+      }
+    });
+  };
+
   const resetToCamera = () => {
     setCapturedImage(null);
     setDetectionResults(null);
@@ -308,6 +340,21 @@ const HomeScreen = () => {
             </CameraButton>
           </ThemedView>
 
+          <ThemedView style={styles.labelingButtonContainer}>
+            <CameraButton
+              variant="secondary"
+              icon="create"
+              onPress={navigateToLabeling}
+              size="medium"
+              disabled={isLoading}
+            >
+              {"Manual Labeling"}
+            </CameraButton>
+            <ThemedText style={styles.labelingHelpText}>
+              Can't detect what you need? Create manual labels to improve the model
+            </ThemedText>
+          </ThemedView>
+
           <ThemedView style={styles.addClassSection}>
             <StyledTextInput
               label="Add New Detection Class"
@@ -322,7 +369,7 @@ const HomeScreen = () => {
               disabled={!newClassName.trim() || isLoading}
               size="medium"
             >
-              Add Class & Retrain
+              {"Add Class & Retrain"}
             </CameraButton>
           </ThemedView>
         </ScrollView>
@@ -554,6 +601,18 @@ const styles = StyleSheet.create({
   overlayPosition: {
     fontSize: 12,
     color: '#9CA3AF',
+  },
+  labelingButtonContainer: {
+    marginHorizontal: 20,
+    marginBottom: 20,
+    alignItems: 'center',
+  },
+  labelingHelpText: {
+    fontSize: 14,
+    textAlign: 'center',
+    marginTop: 8,
+    opacity: 0.7,
+    fontStyle: 'italic',
   },
 });
 
