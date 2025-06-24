@@ -6,7 +6,6 @@ import { StyledTextInput } from '@/components/ui/StyledTextInput';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   ScrollView,
   useColorScheme,
   View
@@ -55,51 +54,62 @@ const ModelTrainingManager = () => {
 
   // Start fine-tuning
   const startTraining = async () => {
+    console.log('startTraining called with epochs:', epochs);
     const epochCount = parseInt(epochs);
     if (isNaN(epochCount) || epochCount <= 0) {
+      console.log('Invalid epoch count:', epochCount);
       PlatformAlert.error('Error', 'Please enter a valid number of epochs');
       return;
     }
 
     if (epochCount > 500) {
+      console.log('Epoch count too high:', epochCount);
       PlatformAlert.error('Error', 'Maximum epochs allowed is 500');
       return;
     }
 
     if (!trainingStats || trainingStats.total_images === 0) {
+      console.log('No training data available:', trainingStats);
       PlatformAlert.error('Error', 'No training data available. Please add some labeled images first.');
       return;
     }
 
-    Alert.alert(
+    console.log('All validation passed, showing confirmation dialog');
+
+    PlatformAlert.confirm(
       'Start Training',
       `Are you sure you want to start fine-tuning with ${epochCount} epochs?\n\nThis will train on:\n• ${trainingStats.total_images} images\n• ${trainingStats.total_labels} labels\n• ${trainingStats.classes.length} classes\n\nThis process may take several minutes.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Start Training', style: 'destructive', onPress: executeTraining }
-      ]
+      executeTraining
     );
   };
 
   const executeTraining = async () => {
     try {
+      console.log('executeTraining started');
       setTrainingProgress({ isTraining: true, message: 'Starting training...' });
 
-      const response = await fetch(`http://localhost:8000/training/start?epochs=${epochs}`, {
+      const url = `http://localhost:8000/training/start?epochs=${epochs}`;
+      console.log('Making API request to:', url);
+
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
       });
 
+      console.log('API response status:', response.status);
+
       if (response.ok) {
         const result = await response.json();
+        console.log('Training completed successfully:', result);
         PlatformAlert.success('Training Complete', result.message);
         setTrainingProgress({ isTraining: false });
         // Refresh statistics
         await fetchTrainingStats();
       } else {
         const errorData = await response.json();
+        console.error('API error response:', errorData);
         throw new Error(errorData.detail || 'Training failed');
       }
     } catch (error) {
