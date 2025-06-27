@@ -86,8 +86,6 @@ class ClassesRequest(BaseModel):
     classes: List[str] = Field(
         ...,
         description="List of object class names to add for detection",
-        example=["person", "car", "bicycle", "dog", "cat"],
-        min_items=1
     )
 
 class ClassesResponse(BaseModel):
@@ -136,8 +134,6 @@ class Detection(BaseModel):
     bbox: List[float] = Field(
         ...,
         description="Bounding box coordinates [x1, y1, x2, y2] in pixels",
-        min_items=4,
-        max_items=4
     )
 
 class DetectionResponse(BaseModel):
@@ -405,7 +401,15 @@ def draw_bounding_boxes(image_path: str, detections_data: List[Dict]) -> str:
                 text_height = bbox_text[3] - bbox_text[1]
             except:
                 # fallback for older PIL versions
-                text_width, text_height = draw.textsize(label, font=font)
+                try:
+                    # Try to get text size using textbbox with different method
+                    bbox_text = draw.textbbox((0, 0), label, font=font)
+                    text_width = bbox_text[2] - bbox_text[0]
+                    text_height = bbox_text[3] - bbox_text[1]
+                except:
+                    # Final fallback - estimate text size
+                    text_width = len(label) * 10  # Rough estimate
+                    text_height = 20  # Rough estimate
 
             # ラベル背景を描画
             label_y = max(0, y1 - text_height - 10)
