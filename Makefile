@@ -23,6 +23,10 @@ server:
 deploy-server:
 	cd backend/src && . ../.venv/bin/activate && gunicorn main:app -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000
 
+deploy-server-public:
+	cd backend/src && . ../.venv/bin/activate && gunicorn main:app -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000 &
+	cd frontend && bash -c 'pnpm exec localtunnel --port 8000 --subdomain dish-detection-api'
+
 frontend:
 	cd frontend && ${PNPM_COMMAND} run start
 
@@ -60,3 +64,5 @@ venv-clean:
 stop:
 	pkill -f "uvicorn main:app --reload --host 0.0.0.0 --port 8000"
 	pkill -f "pnpm run start"
+	pkill -f "gunicorn main:app"
+	pkill -f "localtunnel"
