@@ -32,6 +32,9 @@ importers:
       dayjs:
         specifier: ^1.11.10
         version: 1.11.13
+      dotenv:
+        specifier: ^16.6.0
+        version: 16.6.0
       expo:
         specifier: ~53.0.12
         version: 53.0.12(@babel/core@7.27.4)(@expo/metro-runtime@5.0.4(react-native@0.79.4(@babel/core@7.27.4)(@types/react@19.0.14)(react@19.0.0)))(react-native-webview@13.13.5(react-native@0.79.4(@babel/core@7.27.4)(@types/react@19.0.14)(react@19.0.0))(react@19.0.0))(react-native@0.79.4(@babel/core@7.27.4)(@types/react@19.0.14)(react@19.0.0))(react@19.0.0)
@@ -2104,6 +2107,10 @@ packages:
 
   dotenv@16.4.7:
     resolution: {integrity: sha512-47qPchRCykZC03FhkYAhrvwU4xDBFIj1QPqaarj6mdM/hgUzfPHcpkHJOn3mJAufFeeAxAzeGsr5X0M4k6fLZQ==}
+    engines: {node: '>=12'}
+
+  dotenv@16.6.0:
+    resolution: {integrity: sha512-Omf1L8paOy2VJhILjyhrhqwLIdstqm1BvcDPKg4NGAlkwEu9ODyrFbvk8UymUOMCT+HXo31jg1lArIrVAAhuGA==}
     engines: {node: '>=12'}
 
   dunder-proto@1.0.1:
@@ -7490,9 +7497,11 @@ snapshots:
 
   dotenv-expand@11.0.7:
     dependencies:
-      dotenv: 16.4.7
+      dotenv: 16.6.0
 
   dotenv@16.4.7: {}
+
+  dotenv@16.6.0: {}
 
   dunder-proto@1.0.1:
     dependencies:

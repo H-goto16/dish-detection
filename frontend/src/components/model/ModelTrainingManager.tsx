@@ -3,6 +3,7 @@ import { ThemedView } from '@/components/ThemedView';
 import { CameraButton } from '@/components/ui/CameraButton';
 import { PlatformAlert } from '@/components/ui/PlatformAlert';
 import { StyledTextInput } from '@/components/ui/StyledTextInput';
+import env from '@/env';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -38,7 +39,7 @@ const ModelTrainingManager = () => {
   const fetchTrainingStats = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch('http://localhost:8000/training/data/stats');
+      const response = await fetch(env?.API_ENDPOINT + "/training/data/stats");
       if (response.ok) {
         const stats = await response.json();
         setTrainingStats(stats);
@@ -88,7 +89,7 @@ const ModelTrainingManager = () => {
       console.log('executeTraining started');
       setTrainingProgress({ isTraining: true, message: 'Starting training...' });
 
-      const url = `http://localhost:8000/training/start?epochs=${epochs}`;
+      const url = `${env?.API_ENDPOINT}/training/start?epochs=${epochs}`;
       console.log('Making API request to:', url);
 
       const response = await fetch(url, {

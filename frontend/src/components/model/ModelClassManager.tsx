@@ -1,3 +1,4 @@
+import env from '@/env';
 import { useEffect, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { ThemedText } from '../ThemedText';
@@ -25,12 +26,11 @@ export const ModelClassManager = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const BASE_URL = 'http://localhost:8000';
 
   const fetchModelInfo = async () => {
     try {
       setIsRefreshing(true);
-      const response = await fetch(`${BASE_URL}/model/info`);
+      const response = await fetch(`${env?.API_ENDPOINT}/model/info`);
       if (response.ok) {
         const data: ModelInfo = await response.json();
         setModelInfo(data);
@@ -48,7 +48,7 @@ export const ModelClassManager = () => {
 
   const fetchClasses = async () => {
     try {
-      const response = await fetch(`${BASE_URL}/model/classes`);
+      const response = await fetch(`${env?.API_ENDPOINT}/model/classes`);
       if (response.ok) {
         const data: ClassesResponse = await response.json();
         setClasses(data.classes);
@@ -69,7 +69,7 @@ export const ModelClassManager = () => {
 
     try {
       setIsLoading(true);
-      const response = await fetch(`${BASE_URL}/model/classes`, {
+      const response = await fetch(`${env?.API_ENDPOINT}/model/classes`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -105,7 +105,7 @@ export const ModelClassManager = () => {
       async () => {
         try {
           setIsLoading(true);
-          const response = await fetch(`${BASE_URL}/model/classes`, {
+          const response = await fetch(`${env?.API_ENDPOINT}/model/classes`, {
             method: 'DELETE',
           });
 
@@ -138,11 +138,11 @@ export const ModelClassManager = () => {
           const remainingClasses = classes.filter(cls => cls !== classToRemove);
 
           // Clear all classes first
-          await fetch(`${BASE_URL}/model/classes`, { method: 'DELETE' });
+          await fetch(`${env?.API_ENDPOINT}/model/classes`, { method: 'DELETE' });
 
           // Re-add remaining classes if any
           if (remainingClasses.length > 0) {
-            const response = await fetch(`${BASE_URL}/model/classes`, {
+            const response = await fetch(`${env?.API_ENDPOINT}/model/classes`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',

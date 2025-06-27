@@ -20,6 +20,9 @@ setup-venv:
 server:
 	cd backend/src && . ../.venv/bin/activate && uvicorn main:app --reload --host 0.0.0.0 --port 8000
 
+deploy-server:
+	cd backend/src && . ../.venv/bin/activate && gunicorn main:app -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000
+
 frontend:
 	cd frontend && ${PNPM_COMMAND} run start
 

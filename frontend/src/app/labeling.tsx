@@ -3,19 +3,20 @@ import { ThemedView } from '@/components/ThemedView';
 import { CameraButton } from '@/components/ui/CameraButton';
 import { PlatformAlert } from '@/components/ui/PlatformAlert';
 import { StyledTextInput } from '@/components/ui/StyledTextInput';
+import env from '@/env';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useRef, useState } from 'react';
 import {
-    ActivityIndicator,
-    Dimensions,
-    Image,
-    PanResponder,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    useColorScheme,
-    View
+  ActivityIndicator,
+  Dimensions,
+  Image,
+  PanResponder,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  useColorScheme,
+  View
 } from 'react-native';
 
 const { width: screenWidth } = Dimensions.get('window');
@@ -175,7 +176,7 @@ const LabelingScreen = () => {
         }));
 
         // バックエンドに送信
-        const uploadResponse = await fetch("http://localhost:8000/labeling/submit", {
+        const uploadResponse = await fetch(env?.API_ENDPOINT +"/labeling/submit", {
           method: 'POST',
           body: formData,
         });

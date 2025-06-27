@@ -4,6 +4,7 @@ import { CameraButton, CaptureButton, IconButton } from "@/components/ui/CameraB
 import { DetectionCard } from "@/components/ui/DetectionCard";
 import { PlatformAlert } from "@/components/ui/PlatformAlert";
 import { StyledTextInput } from "@/components/ui/StyledTextInput";
+import env from "@/env";
 import { type CameraType, CameraView, useCameraPermissions } from "expo-camera";
 import * as FileSystem from "expo-file-system";
 import * as ImagePicker from "expo-image-picker";
@@ -38,7 +39,7 @@ const HomeScreen = () => {
 
   const fetchCurrentClasses = async () => {
     try {
-      const response = await fetch("http://localhost:8000/model/classes");
+      const response = await fetch(env?.API_ENDPOINT +"/model/classes");
       if (response.ok) {
         const data = await response.json();
         setCurrentClasses(data.classes || []);
@@ -52,7 +53,7 @@ const HomeScreen = () => {
 
   const addNewClass = async (className: string) => {
     try {
-      const response = await fetch("http://localhost:8000/model/classes", {
+      const response = await fetch(env?.API_ENDPOINT +"/model/classes", {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -141,7 +142,7 @@ const HomeScreen = () => {
           formData.append('image', blob, 'image.jpg');
         }
 
-        const uploadResponse = await fetch("http://localhost:8000/detect", {
+        const uploadResponse = await fetch(env?.API_ENDPOINT + "/detect", {
           method: 'POST',
           body: formData,
         });
@@ -155,7 +156,7 @@ const HomeScreen = () => {
       } else {
         console.log('Using FileSystem.uploadAsync for native platform');
         const uploadResult = await FileSystem.uploadAsync(
-          "http://localhost:8000/detect",
+          env?.API_ENDPOINT + "/detect",
           imageUri,
           {
             fieldName: 'image',
