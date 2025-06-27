@@ -27,6 +27,10 @@ deploy-server-public:
 	cd backend/src && . ../.venv/bin/activate && gunicorn main:app -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000 &
 	cd frontend && bash -c 'pnpm exec localtunnel --port 8000 --subdomain dish-detection-api'
 
+deploy-server-cloudflare:
+	cd backend/src && . ../.venv/bin/activate && gunicorn main:app -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000 &
+	cloudflared tunnel --url http://localhost:8000
+
 frontend:
 	cd frontend && ${PNPM_COMMAND} run start
 
@@ -66,3 +70,4 @@ stop:
 	pkill -f "pnpm run start"
 	pkill -f "gunicorn main:app"
 	pkill -f "localtunnel"
+	pkill -f "cloudflared"
